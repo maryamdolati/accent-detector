@@ -1,2 +1,5 @@
 streamlit
+torch
+openai-whisper
+yt_dlp
 langdetect
