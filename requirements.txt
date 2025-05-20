@@ -1,5 +1,5 @@
-streamlit==1.32.2
-torch==2.1.2
+streamlit
+torch==2.0.1
 openai-whisper
-yt_dlp==2024.05.10
+yt_dlp==2024.04.09
 langdetect
