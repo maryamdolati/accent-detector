@@ -2,14 +2,38 @@
 import streamlit as st
 import os
 import tempfile
+import yt_dlp
+import whisper
 from langdetect import detect
 
-st.title("🎙️ English Accent Detector (Demo Mode)")
-st.write("Paste a public video URL (YouTube or MP4), and get a simulated English accent classification.")
+st.title("🎙️ English Accent Detector")
+st.write("Paste a public video URL (YouTube or MP4), and we will detect the English accent.")
 
-# Simulated accent detection based on fake transcript (no Whisper)
-def fake_transcribe():
-    return "Here's how to upload YouTube Shorts from your PC. Let's go. First, head to youtube.com..."
+@st.cache_resource
+def load_model():
+    return whisper.load_model("base")
+
+model = load_model()
+
+def download_audio(url):
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
+        audio_path = tmp_audio.name
+
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'downloaded_audio.%(ext)s',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192',
+        }],
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    os.rename("downloaded_audio.wav", audio_path)
+    return audio_path
 
 def estimate_accent(text):
     text = text.lower()
@@ -26,8 +50,12 @@ url = st.text_input("Enter a YouTube or MP4 URL:")
 
 if st.button("Analyze Accent") and url:
     try:
-        st.success("Simulating transcription...")
-        transcript = fake_transcribe()
+        st.info("Downloading and extracting audio...")
+        audio_file = download_audio(url)
+
+        st.success("Transcribing with Whisper...")
+        result = model.transcribe(audio_file)
+        transcript = result["text"]
 
         lang = detect(transcript)
         if lang != 'en':
@@ -38,5 +66,6 @@ if st.button("Analyze Accent") and url:
             st.markdown(f"**Accent:** {accent}  \n**Confidence:** {score}%")
             st.markdown(f"**Transcript:** {transcript[:400]}...")
 
+        os.remove(audio_file)
     except Exception as e:
         st.error(f"Error: {e}")
