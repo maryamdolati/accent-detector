@@ -1,5 +1,5 @@
 streamlit
 torch==2.0.1
-openai-whisper
+faster-whisper
 yt_dlp==2024.04.09
 langdetect
