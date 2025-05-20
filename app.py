@@ -7,7 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1SN9kR21COGi0R67DYMP2UuqxN8WJ9T2U
 """
 
-!pip install -q openai-whisper yt_dlp ffmpeg-python
 
 # app.py
 import streamlit as st
