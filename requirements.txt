@@ -1,0 +1,6 @@
+streamlit
+openai-whisper
+torch
+yt_dlp
+langdetect
+moviepy
