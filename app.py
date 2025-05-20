@@ -1,16 +1,16 @@
 import streamlit as st
-import whisper
 import os
 import yt_dlp
 import tempfile
 from langdetect import detect
+from faster_whisper import WhisperModel
 
 st.title("🎙️ English Accent Detector")
-st.write("Paste a public video URL (YouTube or direct MP4) and get an English accent classification.")
+st.write("Paste a public YouTube or MP4 URL and detect the English accent.")
 
 @st.cache_resource
 def load_model():
-    return whisper.load_model("base")
+    return WhisperModel("base", device="cpu", compute_type="int8")
 
 model = load_model()
 
@@ -52,9 +52,9 @@ if st.button("Analyze Accent") and url:
         st.info("Downloading and extracting audio...")
         audio_file = download_audio(url)
 
-        st.success("Transcribing...")
-        result = model.transcribe(audio_file)
-        transcript = result["text"]
+        st.success("Transcribing with Whisper...")
+        segments, _ = model.transcribe(audio_file)
+        transcript = "".join([seg.text for seg in segments])
 
         lang = detect(transcript)
         if lang != 'en':
