@@ -1,9 +1,10 @@
+# accent_utils.py
 import os
 import tempfile
 import urllib.request
 import whisper
-from langdetect import detect
 from moviepy.editor import VideoFileClip
+from langdetect import detect
 import yt_dlp
 
 def is_youtube_url(url):
@@ -78,3 +79,61 @@ def run_accent_detection(video_url):
 
     accent, confidence = estimate_accent(transcript)
     return accent, confidence, transcript
+
+# app.py
+import streamlit as st
+from accent_utils import run_accent_detection
+
+st.title("🎙️ English Accent Detector")
+st.write("Paste a YouTube, Loom or direct MP4 video link to detect the English accent.")
+
+video_url = st.text_input("🔗 Video URL")
+
+if st.button("Analyze"):
+    if video_url:
+        with st.spinner("Analyzing..."):
+            try:
+                result = run_accent_detection(video_url)
+                if result:
+                    accent, confidence, transcript = result
+                    st.success("✅ Accent Detected")
+                    st.markdown(f"**Accent:** {accent}")
+                    st.markdown(f"**Confidence:** {confidence}%")
+                    st.text_area("Transcript Preview", transcript[:300])
+                else:
+                    st.warning("The detected language is not English.")
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+    else:
+        st.info("Please paste a video URL.")
+
+# requirements.txt
+streamlit
+whisper
+moviepy
+yt-dlp
+langdetect
+
+# README.md
+# English Accent Detection Tool
+
+## Overview
+This tool analyzes the spoken English in a video to determine the likely accent.
+
+## Features
+- Accepts YouTube, Loom, or direct MP4 video URL
+- Extracts audio, transcribes using Whisper
+- Estimates English accent (American, British, Australian)
+- Outputs accent classification, confidence score, and transcript
+
+## How to Run
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## Deployment
+Deploy using [https://streamlit.io/cloud](https://streamlit.io/cloud) and paste your GitHub repo.
+
+## Notes
+- YouTube support may fail in cloud deployments due to network limits. Use MP4 or Loom links for best results.
