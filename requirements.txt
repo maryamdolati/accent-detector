@@ -1,5 +1,4 @@
 streamlit
 whisper
-yt-dlp
-langdetect
 torchaudio
+langdetect
