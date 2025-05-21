@@ -2,3 +2,4 @@ streamlit
 whisper
 torchaudio
 langdetect
+moviepy
