@@ -3,3 +3,7 @@ whisper
 torchaudio
 langdetect
 moviepy
+streamlit
+whisper
+moviepy
+langdetect
