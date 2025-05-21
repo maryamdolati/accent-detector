@@ -2,28 +2,24 @@ import os
 import tempfile
 import urllib.request
 import whisper
-import torchaudio
+from moviepy.editor import VideoFileClip
 from langdetect import detect
 
-import urllib.request
-import tempfile
-from moviepy.editor import VideoFileClip
-
 def download_audio_direct(url):
-    # دانلود فایل ویدیویی
+    # دانلود فایل mp4
     tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
     video_path = tmp_video.name
     urllib.request.urlretrieve(url, video_path)
 
-    # استخراج صدا با moviepy و ذخیره به wav
+    # استخراج صوت از ویدیو و ذخیره در wav
     tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     audio_path = tmp_audio.name
+
     clip = VideoFileClip(video_path)
     clip.audio.write_audiofile(audio_path)
-
     clip.close()
+    os.remove(video_path)
     return audio_path
-
 
 def estimate_accent(text):
     text = text.lower()
@@ -45,10 +41,9 @@ def run_accent_detection(video_url):
     model = whisper.load_model("base")
     result = model.transcribe(audio_path)
     transcript = result["text"]
-    lang = detect(transcript)
-
     os.remove(audio_path)
 
+    lang = detect(transcript)
     if lang != 'en':
         return None
 
