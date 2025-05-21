@@ -13,24 +13,39 @@ import yt_dlp
 import whisper
 from langdetect import detect
 
-def download_audio_youtube(url):
-    tmp_wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    audio_path = tmp_wav.name
+import os
+import tempfile
+import yt_dlp
+import ffmpeg
 
+def download_audio_youtube(url):
+    tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+    tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+
+    video_path = tmp_video.name
+    audio_path = tmp_audio.name
+
+    # Step 1: Download video (just best format)
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'audio.%(ext)s',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
-            'preferredquality': '192',
-        }],
+        'outtmpl': video_path,
         'quiet': True,
     }
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
-    os.rename("audio.wav", audio_path)
+
+    # Step 2: Convert to WAV using ffmpeg
+    try:
+        ffmpeg.input(video_path).output(audio_path, format='wav').run(quiet=True, overwrite_output=True)
+    except Exception as e:
+        raise RuntimeError("ffmpeg conversion failed") from e
+
+    # Optional: Remove video after conversion
+    os.remove(video_path)
+
     return audio_path
+
 
 def estimate_accent(text):
     text = text.lower()
