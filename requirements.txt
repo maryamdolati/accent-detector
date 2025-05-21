@@ -1,14 +1,5 @@
 streamlit
-whisper
-torchaudio
-langdetect
-moviepy
-streamlit
-whisper
-moviepy
-langdetect
-streamlit
-whisper
-moviepy
 yt-dlp
+openai-whisper
 langdetect
+torchaudio
