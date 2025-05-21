@@ -1,25 +1,19 @@
 import streamlit as st
-from accent_utils import run_accent_detection
+from langdetect import detect
+from accent_utils import run_accent_detection, estimate_accent
 
-st.title("🎙️ English Accent Detector")
-st.write("Paste a **direct MP4 or Loom video link** to detect English accent.")
-
-video_url = st.text_input("🔗 Video URL")
+st.title("🎙️ Accent Detection from YouTube")
+url = st.text_input("Enter a YouTube video URL")
 
 if st.button("Analyze"):
-    if video_url:
-        with st.spinner("Analyzing..."):
-            try:
-                result = run_accent_detection(video_url)
-                if result:
-                    accent, confidence, transcript = result
-                    st.success("✅ Accent Detected")
-                    st.markdown(f"**Accent:** {accent}")
-                    st.markdown(f"**Confidence:** {confidence}%")
-                    st.text_area("Transcript Preview", transcript[:300])
-                else:
-                    st.warning("The detected language is not English.")
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+    if url:
+        with st.spinner("Processing..."):
+            transcript = run_accent_detection(url)
+            if detect(transcript) != "en":
+                st.warning("Language is not English.")
+            else:
+                accent, conf = estimate_accent(transcript)
+                st.success(f"Accent: {accent} ({conf}%)")
+                st.text_area("Transcript", transcript[:500] + "...")
     else:
-        st.info("Please paste a video URL.")
+        st.warning("Please enter a URL.")
