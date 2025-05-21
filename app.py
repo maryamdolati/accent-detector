@@ -1,71 +1,66 @@
-# app.py
-import streamlit as st
+# filename: accent_app.py
 import os
 import tempfile
 import yt_dlp
 import whisper
 from langdetect import detect
+import streamlit as st
 
-st.title("🎙️ English Accent Detector")
-st.write("Paste a public video URL (YouTube or MP4), and we will detect the English accent.")
 
-@st.cache_resource
-def load_model():
-    return whisper.load_model("base")
-
-model = load_model()
-
-def download_audio(url):
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
-        audio_path = tmp_audio.name
+def download_audio_youtube(url):
+    tmp_wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    audio_path = tmp_wav.name
 
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'downloaded_audio.%(ext)s',
+        'outtmpl': 'audio.%(ext)s',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
             'preferredquality': '192',
         }],
+        'quiet': True,
     }
-
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
-
-    os.rename("downloaded_audio.wav", audio_path)
+    os.rename("audio.wav", audio_path)
     return audio_path
+
 
 def estimate_accent(text):
     text = text.lower()
-    if "mate" in text or "g'day" in text:
-        return "Australian", 85
-    elif "gonna" in text or "wanna" in text or "gotta" in text:
-        return "American", 80
-    elif "shall" in text or "cheers" in text:
-        return "British", 75
-    else:
-        return "Uncertain English", 60
+    american = ["gonna", "wanna", "gotta", "dude", "awesome", "bro", "kinda", "y’all"]
+    british = ["shall", "cheers", "mate", "bloody", "brilliant", "rubbish", "fancy", "flat"]
+    australian = ["g'day", "mate", "no worries", "arvo", "reckon", "heaps", "how ya going"]
 
-url = st.text_input("Enter a YouTube or MP4 URL:")
+    am = sum(word in text for word in american)
+    br = sum(word in text for word in british)
+    au = sum(word in text for word in australian)
 
-if st.button("Analyze Accent") and url:
-    try:
-        st.info("Downloading and extracting audio...")
-        audio_file = download_audio(url)
+    if au > max(am, br): return "Australian", 85
+    elif am > max(br, au): return "American", 80
+    elif br > max(am, au): return "British", 75
+    else: return "Uncertain English", 60
 
-        st.success("Transcribing with Whisper...")
-        result = model.transcribe(audio_file)
+
+st.title("🎙️ English Accent Detector")
+video_url = st.text_input("Enter YouTube video URL:")
+
+if st.button("Analyze Accent") and video_url:
+    with st.spinner("Processing..."):
+        audio_path = download_audio_youtube(video_url)
+        model = whisper.load_model("base")
+        result = model.transcribe(audio_path)
         transcript = result["text"]
+        os.remove(audio_path)
 
         lang = detect(transcript)
         if lang != 'en':
-            st.error("Detected language is not English.")
+            st.error("The detected language is not English.")
         else:
-            accent, score = estimate_accent(transcript)
-            st.subheader("Result")
-            st.markdown(f"**Accent:** {accent}  \n**Confidence:** {score}%")
-            st.markdown(f"**Transcript:** {transcript[:400]}...")
-
-        os.remove(audio_file)
-    except Exception as e:
-        st.error(f"Error: {e}")
+            accent, confidence = estimate_accent(transcript)
+            st.success("Accent Detected!")
+            st.write(f"**Accent:** {accent}")
+            st.write(f"**Confidence:** {confidence}%")
+            st.write("**Transcript (first 300 chars):**")
+            st.code(transcript[:300])
