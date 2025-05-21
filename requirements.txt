@@ -1,5 +1,5 @@
 streamlit
-torch
-openai-whisper
-yt_dlp
+whisper
+yt-dlp
 langdetect
+torchaudio
