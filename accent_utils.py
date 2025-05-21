@@ -2,16 +2,41 @@ import os
 import tempfile
 import urllib.request
 import whisper
-from moviepy.editor import VideoFileClip
 from langdetect import detect
+from moviepy.editor import VideoFileClip
+import yt_dlp
+
+def is_youtube_url(url):
+    return "youtube.com" in url or "youtu.be" in url
+
+def download_audio_youtube(url):
+    tmp_dir = tempfile.mkdtemp()
+    audio_path = os.path.join(tmp_dir, "audio.wav")
+
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': os.path.join(tmp_dir, 'audio.%(ext)s'),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    if not os.path.exists(audio_path):
+        raise RuntimeError("Audio extraction from YouTube failed")
+
+    return audio_path
 
 def download_audio_direct(url):
-    # دانلود فایل mp4
     tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
     video_path = tmp_video.name
     urllib.request.urlretrieve(url, video_path)
 
-    # استخراج صوت از ویدیو و ذخیره در wav
     tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     audio_path = tmp_audio.name
 
@@ -37,7 +62,11 @@ def estimate_accent(text):
     else: return "Uncertain English", 60
 
 def run_accent_detection(video_url):
-    audio_path = download_audio_direct(video_url)
+    if is_youtube_url(video_url):
+        audio_path = download_audio_youtube(video_url)
+    else:
+        audio_path = download_audio_direct(video_url)
+
     model = whisper.load_model("base")
     result = model.transcribe(audio_path)
     transcript = result["text"]
