@@ -1,32 +1,23 @@
 import os
 import tempfile
-import yt_dlp
+import urllib.request
 import whisper
+import torchaudio
 from langdetect import detect
 
-def download_audio_youtube(url):
-    tmp_dir = tempfile.mkdtemp()
-    audio_path = os.path.join(tmp_dir, "audio.wav")
+def download_audio_direct(url):
+    # دانلود ویدیو
+    tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+    tmp_video_path = tmp_video.name
+    urllib.request.urlretrieve(url, tmp_video_path)
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': os.path.join(tmp_dir, 'audio.%(ext)s'),
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
-            'preferredquality': '192',
-        }],
-        'quiet': True,
-    }
+    # تبدیل و ذخیره صوت از ویدیو
+    waveform, sample_rate = torchaudio.load(tmp_video_path)
+    tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    torchaudio.save(tmp_audio.name, waveform, sample_rate)
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-
-    if not os.path.exists(audio_path):
-        raise RuntimeError("Audio extraction failed")
-
-    return audio_path
-
+    os.remove(tmp_video_path)
+    return tmp_audio.name
 
 def estimate_accent(text):
     text = text.lower()
@@ -43,13 +34,13 @@ def estimate_accent(text):
     elif br > max(am, au): return "British", 75
     else: return "Uncertain English", 60
 
-
 def run_accent_detection(video_url):
-    audio_path = download_audio_youtube(video_url)
+    audio_path = download_audio_direct(video_url)
     model = whisper.load_model("base")
     result = model.transcribe(audio_path)
     transcript = result["text"]
     lang = detect(transcript)
+
     os.remove(audio_path)
 
     if lang != 'en':
