@@ -3,4 +3,3 @@ whisper
 yt-dlp
 langdetect
 torchaudio
-ffmpeg-python
