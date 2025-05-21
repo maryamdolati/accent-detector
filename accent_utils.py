@@ -19,32 +19,31 @@ import yt_dlp
 import ffmpeg
 
 def download_audio_youtube(url):
-    tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-    tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    tmp_dir = tempfile.mkdtemp()
+    audio_path = os.path.join(tmp_dir, "audio.wav")
 
-    video_path = tmp_video.name
-    audio_path = tmp_audio.name
-
-    # Step 1: Download video (just best format)
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': video_path,
+        'outtmpl': os.path.join(tmp_dir, 'audio.%(ext)s'),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192',
+        }],
+        'ffmpeg_location': '/usr/bin/ffmpeg',  # Optional: custom path if needed
         'quiet': True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    # Step 2: Convert to WAV using ffmpeg
-    try:
-        ffmpeg.input(video_path).output(audio_path, format='wav').run(quiet=True, overwrite_output=True)
-    except Exception as e:
-        raise RuntimeError("ffmpeg conversion failed") from e
+    # Find resulting audio file
+    final_audio = os.path.join(tmp_dir, "audio.wav")
+    if not os.path.exists(final_audio):
+        raise RuntimeError("Audio extraction failed")
 
-    # Optional: Remove video after conversion
-    os.remove(video_path)
+    return final_audio
 
-    return audio_path
 
 
 def estimate_accent(text):
