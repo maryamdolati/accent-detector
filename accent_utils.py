@@ -5,19 +5,25 @@ import whisper
 import torchaudio
 from langdetect import detect
 
+import urllib.request
+import tempfile
+from moviepy.editor import VideoFileClip
+
 def download_audio_direct(url):
-    # دانلود ویدیو
+    # دانلود فایل ویدیویی
     tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-    tmp_video_path = tmp_video.name
-    urllib.request.urlretrieve(url, tmp_video_path)
+    video_path = tmp_video.name
+    urllib.request.urlretrieve(url, video_path)
 
-    # تبدیل و ذخیره صوت از ویدیو
-    waveform, sample_rate = torchaudio.load(tmp_video_path)
+    # استخراج صدا با moviepy و ذخیره به wav
     tmp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    torchaudio.save(tmp_audio.name, waveform, sample_rate)
+    audio_path = tmp_audio.name
+    clip = VideoFileClip(video_path)
+    clip.audio.write_audiofile(audio_path)
 
-    os.remove(tmp_video_path)
-    return tmp_audio.name
+    clip.close()
+    return audio_path
+
 
 def estimate_accent(text):
     text = text.lower()
