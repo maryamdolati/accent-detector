@@ -7,3 +7,8 @@ streamlit
 whisper
 moviepy
 langdetect
+streamlit
+whisper
+moviepy
+yt-dlp
+langdetect
